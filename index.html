@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0e27" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="LA28 Schedule" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="manifest" href="manifest.json" />
+  <title>LA 2028 Olympics Schedule</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    html,body,#root{width:100%;min-height:100vh;overscroll-behavior:none}
+    body{background:#0a0e27;-webkit-tap-highlight-color:transparent}
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect, useCallback, useMemo } = React;
+
+    /* ─── Storage (IndexedDB + localStorage fallback) ─── */
+    const DB='la28db',ST='notes';
+    const odb=()=>new Promise((r,j)=>{const q=indexedDB.open(DB,1);q.onupgradeneeded=()=>q.result.createObjectStore(ST);q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error)});
+    const iGet=async k=>{try{const db=await odb();return new Promise(r=>{const t=db.transaction(ST,'readonly').objectStore(ST).get(k);t.onsuccess=()=>r(t.result??null);t.onerror=()=>r(null)})}catch(e){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null}catch{return null}}};
+    const iSet=async(k,v)=>{try{const db=await odb();db.transaction(ST,'readwrite').objectStore(ST).put(v,k)}catch(e){}try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+
+    /* ─── Sport definitions ─── */
+    const SP={
+      rugby_sevens:    {l:"Rugby Sevens",           i:"\u{1F3C9}",c:"#D62828",v:"Carson Stadium (Dignity Health Sports Park), Carson"},
+      softball:        {l:"Softball",               i:"\u{1F94E}",c:"#E63946",v:"Devon Park (OKC Softball Park), Oklahoma City, OK"},
+      football:        {l:"Football (Soccer)",      i:"\u26BD",   c:"#2D6A4F",v:"Multiple cities / Rose Bowl Stadium, Pasadena"},
+      swimming:        {l:"Swimming",               i:"\u{1F3CA}",c:"#0077B6",v:"2028 Stadium (SoFi Stadium), Inglewood"},
+      gymnastics:      {l:"Artistic Gymnastics",    i:"\u{1F938}",c:"#9B5DE5",v:"DTLA Arena, Los Angeles"},
+      skateboarding:   {l:"Skateboarding",          i:"\u{1F6F9}",c:"#F77F00",v:"Valley Complex 1 & 2, Sepulveda Basin"},
+      athletics:       {l:"Athletics",              i:"\u{1F3C3}",c:"#FF006E",v:"LA Memorial Coliseum, Exposition Park"},
+      basketball:      {l:"Basketball",             i:"\u{1F3C0}",c:"#FF8C00",v:"Inglewood Dome (Intuit Dome), Inglewood"},
+      baseball:        {l:"Baseball",               i:"\u26BE",   c:"#780000",v:"Dodger Stadium, Downtown LA"},
+      tennis:          {l:"Tennis",                 i:"\u{1F3BE}",c:"#606C38",v:"Carson Courts, Carson"},
+      volleyball:      {l:"Volleyball",             i:"\u{1F3D0}",c:"#3A86FF",v:"Anaheim Arena, Anaheim"},
+      beach_volleyball:{l:"Beach Volleyball",       i:"\u{1F3D6}\uFE0F",c:"#FFB703",v:"Alamitos Beach Stadium, Long Beach"},
+      diving:          {l:"Diving",                 i:"\u{1F93F}",c:"#219EBC",v:"Rose Bowl Aquatics Center, Pasadena"},
+      boxing:          {l:"Boxing",                 i:"\u{1F94A}",c:"#C1121F",v:"Peacock Theater / DTLA Arena, LA"},
+      cycling_track:   {l:"Cycling (Track)",        i:"\u{1F6B4}",c:"#8338EC",v:"Carson Velodrome, Carson"},
+      cycling_road:    {l:"Cycling (Road)",         i:"\u{1F6B2}",c:"#7209B7",v:"Venice Beach Boardwalk (start), LA"},
+      cricket:         {l:"Cricket",                i:"\u{1F3CF}",c:"#2A9D8F",v:"Fairgrounds Cricket Stadium, LA"},
+      field_hockey:    {l:"Field Hockey",           i:"\u{1F3D1}",c:"#457B9D",v:"Carson Field, Carson"},
+      handball:        {l:"Handball",               i:"\u{1F93E}",c:"#BC6C25",v:"Long Beach Arena, Long Beach"},
+      water_polo:      {l:"Water Polo",             i:"\u{1F93D}",c:"#023047",v:"Long Beach Aquatics Center, Long Beach"},
+      fencing:         {l:"Fencing",                i:"\u2694\uFE0F",c:"#4895EF",v:"LA Convention Center Hall 1, LA"},
+      judo:            {l:"Judo",                   i:"\u{1F94B}",c:"#14213D",v:"LA Convention Center Hall 2, LA"},
+      wrestling:       {l:"Wrestling",              i:"\u{1F93C}",c:"#5A189A",v:"LA Convention Center Hall 2, LA"},
+      taekwondo:       {l:"Taekwondo",              i:"\u{1F94B}",c:"#480CA8",v:"LA Convention Center Hall 1, LA"},
+      weightlifting:   {l:"Weightlifting",          i:"\u{1F3CB}\uFE0F",c:"#6D6875",v:"Peacock Theater, LA"},
+      table_tennis:    {l:"Table Tennis",           i:"\u{1F3D3}",c:"#06D6A0",v:"LA Convention Center Hall 3, LA"},
+      badminton:       {l:"Badminton",              i:"\u{1F3F8}",c:"#B5179E",v:"Galen Center, LA"},
+      archery:         {l:"Archery",                i:"\u{1F3F9}",c:"#DDA15E",v:"Carson Stadium, Carson"},
+      shooting:        {l:"Shooting",               i:"\u{1F3AF}",c:"#003049",v:"Long Beach / Whittier Narrows, LA"},
+      golf:            {l:"Golf",                   i:"\u26F3",   c:"#38B000",v:"Riviera Country Club, Pacific Palisades"},
+      sailing:         {l:"Sailing",                i:"\u26F5",   c:"#118AB2",v:"Port of Los Angeles, San Pedro"},
+      rowing:          {l:"Rowing",                 i:"\u{1F6A3}",c:"#669BBC",v:"Marine Stadium, Long Beach"},
+      canoe_slalom:    {l:"Canoe Slalom",           i:"\u{1F6F6}",c:"#E9C46A",v:"OKC Whitewater Center, Oklahoma City, OK"},
+      canoe_sprint:    {l:"Canoe Sprint",           i:"\u{1F6F6}",c:"#F4A261",v:"Marine Stadium, Long Beach"},
+      equestrian:      {l:"Equestrian",             i:"\u{1F3C7}",c:"#7B2D26",v:"Santa Anita Park, Arcadia"},
+      flag_football:   {l:"Flag Football",          i:"\u{1F3C8}",c:"#F72585",v:"Exposition Park Stadium, LA"},
+      lacrosse:        {l:"Lacrosse",               i:"\u{1F945}",c:"#4361EE",v:"Exposition Park Stadium, LA"},
+      surfing:         {l:"Surfing",                i:"\u{1F3C4}",c:"#00B4D8",v:"Trestles State Beach, San Clemente"},
+      sport_climbing:  {l:"Sport Climbing",         i:"\u{1F9D7}",c:"#EF476F",v:"Long Beach Climbing Theater, Long Beach"},
+      squash:          {l:"Squash",                 i:"\u{1F3BE}",c:"#073B4C",v:"Comcast Squash Center, Universal City"},
+      triathlon:       {l:"Triathlon",              i:"\u{1F3CA}",c:"#FF5400",v:"Venice Beach, LA"},
+      modern_pentathlon:{l:"Modern Pentathlon",     i:"\u2694\uFE0F",c:"#7678ED",v:"Valley Complex 2, Sepulveda Basin"},
+      mountain_bike:   {l:"Mountain Bike",          i:"\u{1F6B5}",c:"#495057",v:"Venue TBD"},
+      bmx_freestyle:   {l:"BMX Freestyle",          i:"\u{1F6B2}",c:"#FF9E00",v:"Valley Complex 1, Sepulveda Basin"},
+      bmx_racing:      {l:"BMX Racing",             i:"\u{1F6B2}",c:"#CC5803",v:"Valley Complex 4, Sepulveda Basin"},
+      trampoline:      {l:"Trampoline Gymnastics",  i:"\u{1F938}",c:"#C77DFF",v:"DTLA Arena, Los Angeles"},
+      rhythmic_gym:    {l:"Rhythmic Gymnastics",    i:"\u{1F938}",c:"#E0AAFF",v:"Galen Center, LA"},
+      artistic_swim:   {l:"Artistic Swimming",      i:"\u{1F3CA}",c:"#A8DADC",v:"Long Beach Aquatics Center, Long Beach"},
+      open_water:      {l:"Open Water Swimming",    i:"\u{1F30A}",c:"#0096C7",v:"Belmont Shore, Long Beach"},
+      basketball_3x3:  {l:"3x3 Basketball",         i:"\u{1F3C0}",c:"#FB8500",v:"Valley Complex 3, Sepulveda Basin"},
+    };
+
+    /* ─── Full schedule: sport key → { day: {d:"detail", v:"venue override"} } ─── */
+    const SCH={
+      rugby_sevens:{12:{d:"Women's Pool Play"},13:{d:"Women's Pool Play & Classification"},15:{d:"Women's Medal Matches \u2605"},16:{d:"Men's Pool Play"},17:{d:"Men's Pool Play & Quarterfinals"},18:{d:"Men's Medal Matches \u2605"}},
+      softball:{23:{d:"Group Stage Begins"},24:{d:"Group Stage"},25:{d:"Group Stage"},26:{d:"Group Stage"},27:{d:"Group Stage Ends"},28:{d:"Bronze Medal Game"},29:{d:"Gold Medal Game \u2605"}},
+      football:{10:{d:"Men's Group Play Begins",v:"New York, Nashville, Columbus, St. Louis, San Jose, San Diego"},11:{d:"Women's Group Play Begins",v:"New York, Nashville, Columbus, St. Louis, San Jose, San Diego"},12:{d:"Group Play",v:"New York, Nashville, Columbus, St. Louis, San Jose, San Diego"},13:{d:"Group Play",v:"New York, Nashville, Columbus, St. Louis, San Jose, San Diego"},15:{d:"Group Play",v:"New York, Nashville, Columbus, St. Louis, San Jose, San Diego"},16:{d:"Group Play",v:"New York, Nashville, Columbus, St. Louis, San Jose, San Diego"},17:{d:"Group Play",v:"New York, Nashville, Columbus, St. Louis, San Jose, San Diego"},18:{d:"Group Play",v:"New York, Nashville, Columbus, St. Louis, San Jose, San Diego"},19:{d:"Group Play",v:"Advancing toward West Coast venues"},20:{d:"Group Play",v:"Advancing toward West Coast venues"},21:{d:"Quarterfinals",v:"Moving westward toward LA"},22:{d:"Quarterfinals",v:"Moving westward toward LA"},23:{d:"Quarterfinals"},24:{d:"Semifinals",v:"Rose Bowl Stadium, Pasadena"},25:{d:"Semifinals",v:"Rose Bowl Stadium, Pasadena"},26:{d:"Bronze Medal Match",v:"Rose Bowl Stadium, Pasadena"},29:{d:"Gold Medal Match \u2605",v:"Rose Bowl Stadium, Pasadena"}},
+      swimming:{22:{d:"Heats Begin"},23:{d:"Heats & Finals"},24:{d:"Heats & Finals"},25:{d:"Heats & Finals"},26:{d:"Heats & Finals"},27:{d:"Heats & Finals"},28:{d:"Heats & Finals"},29:{d:"Finals"},30:{d:"Final Events \u2605"}},
+      gymnastics:{15:{d:"Qualifications"},16:{d:"Qualifications"},17:{d:"Men's Team Final \u2605"},18:{d:"Women's Team Final \u2605"},19:{d:"Men's All-Around \u2605"},20:{d:"Women's All-Around \u2605"},22:{d:"Apparatus Finals \u2605"},23:{d:"Apparatus Finals \u2605"},24:{d:"Apparatus Finals \u2605"},25:{d:"Mixed Team Final \u2605"}},
+      skateboarding:{15:{d:"Street Prelims",v:"Valley Complex 1"},16:{d:"Street Prelims",v:"Valley Complex 1"},17:{d:"Street Finals \u2605",v:"Valley Complex 1"},18:{d:"Street Finals \u2605",v:"Valley Complex 1"},19:{d:"Park Prelims",v:"Valley Complex 2"},20:{d:"Park Prelims",v:"Valley Complex 2"},21:{d:"Park Finals \u2605",v:"Valley Complex 2"},22:{d:"Park Finals \u2605",v:"Valley Complex 2"}},
+      athletics:{15:{d:"100m, Shot Put \u2605"},16:{d:"100m W, Long Jump \u2605"},17:{d:"Heats & Finals \u2605"},18:{d:"Heats & Finals \u2605"},19:{d:"Heats & Finals \u2605"},20:{d:"Heats & Finals \u2605"},21:{d:"Heats & Finals \u2605"},22:{d:"Heats & Finals \u2605"},23:{d:"Heats & Finals \u2605"},24:{d:"Final Day T&F \u2605"},27:{d:"Race Walk",v:"Course TBD"},29:{d:"Marathon (W) \u2605",v:"Venice Beach (start)"},30:{d:"Marathon (M) \u2605",v:"Venice Beach (start)"}},
+      basketball:{12:{d:"Women's Group Play"},13:{d:"Group Play"},15:{d:"Group Play"},16:{d:"Group Play"},17:{d:"Group Play"},18:{d:"Group Play"},19:{d:"Group Play"},20:{d:"Group Play"},21:{d:"Group Play"},22:{d:"Group Play"},23:{d:"W Quarterfinals"},24:{d:"M Quarterfinals"},25:{d:"Quarterfinals"},26:{d:"Semifinals"},27:{d:"Semifinals"},28:{d:"Bronze Medal"},29:{d:"Gold Medal \u2605"},30:{d:"Gold Medal \u2605"}},
+      baseball:{13:{d:"Opening Round"},15:{d:"Group Stage"},16:{d:"Group Stage"},17:{d:"Quarterfinals"},18:{d:"Semifinals"},19:{d:"Medal Games \u2605"}},
+      tennis:{15:{d:"First Round"},16:{d:"First Round"},17:{d:"Second Round"},18:{d:"Second Round"},19:{d:"Third Round"},20:{d:"QFs"},21:{d:"QFs"},22:{d:"Semis"},23:{d:"Semis"},24:{d:"Finals \u2605"},25:{d:"Finals \u2605"},26:{d:"Finals \u2605"},27:{d:"Finals \u2605"},28:{d:"Finals \u2605"}},
+      volleyball:{15:{d:"Group Play"},16:{d:"Group Play"},17:{d:"Group Play"},18:{d:"Group Play"},19:{d:"Group Play"},20:{d:"Group Play"},21:{d:"Group Play"},22:{d:"Group Play"},23:{d:"Group Play"},24:{d:"QFs"},25:{d:"QFs"},26:{d:"Semis"},27:{d:"Semis"},28:{d:"Bronze Medal"},29:{d:"Gold Medal \u2605"},30:{d:"Gold Medal \u2605"}},
+      beach_volleyball:{15:{d:"Group Play"},16:{d:"Group Play"},17:{d:"Group Play"},18:{d:"Group Play"},19:{d:"Group Play"},20:{d:"Group Play"},21:{d:"Round of 16"},22:{d:"Round of 16"},23:{d:"Round of 16"},24:{d:"Round of 16"},25:{d:"QFs"},26:{d:"QFs"},27:{d:"Semis"},28:{d:"Medal Matches \u2605"},29:{d:"Medal Matches \u2605"}},
+      diving:{16:{d:"Synchro Events"},17:{d:"Prelims"},18:{d:"Prelims & Semis"},19:{d:"Finals \u2605"},20:{d:"Finals \u2605"},21:{d:"Finals \u2605"},22:{d:"Finals \u2605"},25:{d:"Synchro \u2605"},26:{d:"Prelims"},27:{d:"Finals \u2605"},28:{d:"Finals \u2605"}},
+      boxing:{15:{d:"Prelims"},16:{d:"Prelims"},17:{d:"Prelims"},18:{d:"Prelims"},19:{d:"R16"},20:{d:"QFs"},21:{d:"QFs"},22:{d:"QFs"},23:{d:"Semis"},24:{d:"Semis"},25:{d:"Semis"},26:{d:"Finals \u2605"},27:{d:"Finals \u2605"},28:{d:"Finals \u2605"},29:{d:"Finals \u2605"}},
+      cycling_track:{25:{d:"Qualifying"},26:{d:"Heats & Finals \u2605"},27:{d:"Finals \u2605"},28:{d:"Finals \u2605"},29:{d:"Finals \u2605"},30:{d:"Finals \u2605"}},
+      cycling_road:{23:{d:"Men's Road Race"},26:{d:"Women's Race & TT \u2605"}},
+      cricket:{12:{d:"Women's Group"},13:{d:"Women's Group"},15:{d:"Group Play"},16:{d:"Group Play"},17:{d:"Group Play"},18:{d:"Group Play"},19:{d:"Group Play"},20:{d:"Women's Gold \u2605"},21:{d:"Men's Group"},22:{d:"Men's Group"},23:{d:"Men's Group"},24:{d:"Men's Group"},25:{d:"Men's Group"},28:{d:"Men's Bronze"},29:{d:"Men's Gold \u2605"}},
+      field_hockey:{12:{d:"M Group Play"},13:{d:"W Group Play"},15:{d:"Group Play"},16:{d:"Group Play"},17:{d:"Group Play"},18:{d:"Group Play"},19:{d:"Group Play"},20:{d:"Group Play"},21:{d:"Group Play"},22:{d:"Group Play"},23:{d:"Play-In"},24:{d:"QFs"},25:{d:"QFs"},26:{d:"Semis"},27:{d:"Semis"},28:{d:"Bronze Medal"},29:{d:"Gold Medal \u2605"}},
+      handball:{12:{d:"M Group"},13:{d:"W Group"},15:{d:"Group Play"},16:{d:"Group Play"},17:{d:"Group Play"},18:{d:"Group Play"},19:{d:"Group Play"},20:{d:"Group Play"},21:{d:"Group Play"},22:{d:"Group Play"},23:{d:"QFs"},24:{d:"QFs"},25:{d:"Semis"},26:{d:"Semis"},28:{d:"Bronze Medal"},29:{d:"Gold Medal \u2605"},30:{d:"Gold Medal \u2605"}},
+      water_polo:{12:{d:"M Group"},13:{d:"W Group"},15:{d:"Group Play"},16:{d:"Group Play"},17:{d:"Group Play"},18:{d:"Group Play"},19:{d:"Group Play"},20:{d:"Group Play"},21:{d:"Group Play"},22:{d:"QFs"},23:{d:"QFs"},24:{d:"Semis"},25:{d:"Semis"},28:{d:"Bronze Medal"},29:{d:"Gold Medal \u2605"}},
+      fencing:{15:{d:"Individual \u2605"},16:{d:"Individual \u2605"},17:{d:"Individual \u2605"},18:{d:"Individual \u2605"},19:{d:"Individual \u2605"},20:{d:"Team \u2605"},21:{d:"Team \u2605"},22:{d:"Team \u2605"},23:{d:"Team \u2605"},24:{d:"Team \u2605"}},
+      judo:{15:{d:"Individual \u2605"},16:{d:"Individual \u2605"},17:{d:"Individual \u2605"},18:{d:"Individual \u2605"},19:{d:"Individual \u2605"},20:{d:"Individual \u2605"},21:{d:"Individual \u2605"},22:{d:"Team \u2605"}},
+      wrestling:{26:{d:"Prelims & Finals \u2605"},27:{d:"Prelims & Finals \u2605"},28:{d:"Finals \u2605"},29:{d:"Finals \u2605"}},
+      taekwondo:{26:{d:"Prelims & Finals \u2605"},27:{d:"Finals \u2605"},28:{d:"Finals \u2605"},29:{d:"Finals \u2605"}},
+      weightlifting:{22:{d:"Competition"},23:{d:"Competition"},24:{d:"Competition \u2605"},25:{d:"Competition \u2605"},26:{d:"Competition \u2605"},27:{d:"Competition \u2605"},28:{d:"Competition \u2605"},29:{d:"Competition \u2605"}},
+      table_tennis:{15:{d:"Prelims"},16:{d:"Prelims"},17:{d:"R32"},18:{d:"R16"},19:{d:"QFs"},20:{d:"Semis"},21:{d:"Singles Finals \u2605"},22:{d:"Team Event"},23:{d:"Team QFs"},24:{d:"Team Semis"},25:{d:"Team Finals \u2605"},26:{d:"Mixed Event"},27:{d:"Mixed Semis"},28:{d:"Mixed Final \u2605"},29:{d:"Mixed Final \u2605"}},
+      badminton:{19:{d:"Group Play"},20:{d:"Group Play"},21:{d:"Group / R16"},22:{d:"QFs"},23:{d:"Semis \u2605"},24:{d:"Finals \u2605"},25:{d:"Finals \u2605"},26:{d:"Finals \u2605"},27:{d:"Finals \u2605"},28:{d:"Finals \u2605"}},
+      archery:{18:{d:"Ranking"},19:{d:"Ranking"},20:{d:"Eliminations"},21:{d:"Eliminations"},22:{d:"Eliminations"},23:{d:"Eliminations"},24:{d:"Team \u2605"},25:{d:"Team \u2605"},26:{d:"Individual"},27:{d:"Individual"},28:{d:"Individual \u2605"},29:{d:"Individual \u2605"},30:{d:"Compound \u2605"}},
+      shooting:{15:{d:"Events \u2605"},16:{d:"Events \u2605"},17:{d:"Events \u2605"},18:{d:"Events \u2605"},19:{d:"Events \u2605"},20:{d:"Events \u2605"},21:{d:"Shotgun \u2605"},22:{d:"Shotgun \u2605"},23:{d:"Events \u2605"},24:{d:"Final Events \u2605"}},
+      golf:{18:{d:"Mixed Four-Ball"},19:{d:"Mixed Four-Ball"},20:{d:"Mixed Foursomes"},21:{d:"Mixed Foursomes"},22:{d:"Mixed Final \u2605"},23:{d:"Mixed Final \u2605"},24:{d:"Mixed Medal \u2605"},26:{d:"Individual Rd 1"},27:{d:"Individual Rd 2"},28:{d:"Individual Rd 3"},29:{d:"Individual Final \u2605"}},
+      sailing:{22:{d:"Racing"},23:{d:"Racing"},24:{d:"Racing"},25:{d:"Racing"},26:{d:"Racing"},27:{d:"Medal Races \u2605"}},
+      rowing:{15:{d:"Heats"},16:{d:"Heats"},17:{d:"Repechage"},18:{d:"QFs"},19:{d:"Semis"},20:{d:"Semis"},21:{d:"Finals \u2605"},22:{d:"Finals \u2605"}},
+      canoe_slalom:{14:{d:"Heats"},15:{d:"Heats & Finals \u2605"},16:{d:"Finals \u2605"},17:{d:"Finals \u2605"},18:{d:"Kayak Cross"},19:{d:"Kayak Cross"},20:{d:"Cross Finals \u2605"}},
+      canoe_sprint:{25:{d:"Heats"},26:{d:"Heats & QFs"},27:{d:"Semis"},28:{d:"Finals \u2605"},29:{d:"Finals \u2605"}},
+      equestrian:{18:{d:"Dressage"},19:{d:"Dressage"},20:{d:"Dressage \u2605"},21:{d:"Eventing XC"},22:{d:"Eventing \u2605"},24:{d:"Dressage Ind \u2605"},25:{d:"Jumping Qual"},26:{d:"Jump Team \u2605"},28:{d:"Jump Ind \u2605"},29:{d:"Jump Ind \u2605"}},
+      flag_football:{15:{d:"Group Play"},16:{d:"Group Play"},17:{d:"Group Play"},18:{d:"Group Play"},19:{d:"QFs"},20:{d:"Semis"},21:{d:"Men's Gold \u2605"},22:{d:"Women's Gold \u2605"}},
+      lacrosse:{22:{d:"Group Play"},23:{d:"Group Play"},24:{d:"Group Play"},25:{d:"Qualifying"},26:{d:"Qualifying"},27:{d:"Semis"},28:{d:"Semis"},29:{d:"Medal Games \u2605"}},
+      surfing:{21:{d:"Rounds 1-3"},22:{d:"Rounds 1-3"},23:{d:"R16"},24:{d:"QFs"},25:{d:"QFs"},26:{d:"Semis"},27:{d:"Semis"},28:{d:"Finals \u2605"}},
+      sport_climbing:{22:{d:"Speed Qual"},23:{d:"Speed Finals \u2605"},24:{d:"Boulder & Lead"},25:{d:"Boulder & Lead"},26:{d:"Combined Semis"},27:{d:"Combined Semis"},28:{d:"Combined \u2605"},29:{d:"Combined \u2605"}},
+      squash:{15:{d:"R32"},16:{d:"R32"},17:{d:"R16"},18:{d:"QFs"},19:{d:"QFs"},20:{d:"Semis"},21:{d:"Semis"},22:{d:"Semis"},23:{d:"W Final \u2605"},24:{d:"M Final \u2605"}},
+      triathlon:{15:{d:"Women's \u2605"},16:{d:"Men's \u2605"},17:{d:"Mixed Relay \u2605"}},
+      modern_pentathlon:{27:{d:"Qualifying"},28:{d:"Qualifying"},29:{d:"Finals \u2605"}},
+      mountain_bike:{19:{d:"XC Finals \u2605"}},
+      bmx_freestyle:{28:{d:"Qualifying"},29:{d:"Finals \u2605"}},
+      bmx_racing:{22:{d:"QFs & Semis"},23:{d:"Finals \u2605"}},
+      trampoline:{21:{d:"Finals \u2605"}},
+      rhythmic_gym:{27:{d:"Individual Qual"},28:{d:"Individual \u2605"},29:{d:"Group \u2605"}},
+      artistic_swim:{25:{d:"Duet Technical"},26:{d:"Duet Free"},27:{d:"Team Technical"},28:{d:"Team Free"},29:{d:"Team Final \u2605"}},
+      open_water:{17:{d:"Women's 10km \u2605"},18:{d:"Men's 10km \u2605"}},
+      basketball_3x3:{16:{d:"Group Play"},17:{d:"Group Play"},18:{d:"Group Play"},19:{d:"Group Play"},20:{d:"Group Play"},21:{d:"QFs"},22:{d:"Medal Games \u2605"}},
+    };
+
+    const NC="#00C9A7",NBG="rgba(0,201,167,0.15)",NBR="rgba(0,201,167,0.5)";
+    const DOW=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+    const CER={14:"Opening Ceremony",30:"Closing Ceremony"};
+    const DEF=["softball","football","swimming","gymnastics","skateboarding","rugby_sevens"];
+
+    function App(){
+      const[sel,setSel]=useState(null);
+      const[notes,setNotes]=useState({});
+      const[ni,setNi]=useState("");
+      const[ed,setEd]=useState(false);
+      const[loaded,setLoaded]=useState(false);
+      const[toast,setToast]=useState(null);
+      const[picker,setPicker]=useState(false);
+      const[chosen,setChosen]=useState(DEF);
+      const[q,setQ]=useState("");
+
+      useEffect(()=>{Promise.all([iGet("ol-notes"),iGet("ol-sel")]).then(([n,s])=>{if(n&&typeof n==='object')setNotes(n);if(s&&Array.isArray(s))setChosen(s);setLoaded(true)})},[]);
+
+      const flash=m=>{setToast(m);setTimeout(()=>setToast(null),2000)};
+      const pNotes=useCallback(u=>{setNotes(u);iSet("ol-notes",u)},[]);
+      const pChosen=useCallback(u=>{setChosen(u);iSet("ol-sel",u)},[]);
+
+      const saveNote=()=>{if(!sel||!ni.trim())return;pNotes({...notes,[sel]:ni.trim()});setEd(false);flash("Note saved")};
+      const delNote=()=>{if(!sel)return;const u={...notes};delete u[sel];pNotes(u);setNi("");setEd(false);flash("Note deleted")};
+      useEffect(()=>{if(sel&&notes[sel])setNi(notes[sel]);else setNi("");setEd(false)},[sel]);
+
+      const toggle=k=>{const n=chosen.includes(k)?chosen.filter(s=>s!==k):[...chosen,k];pChosen(n)};
+
+      const off=6,days=31;
+      const cells=useMemo(()=>{const c=[];for(let i=0;i<off;i++)c.push(null);for(let d=1;d<=days;d++)c.push(d);return c},[]);
+
+      const evts=d=>{const r=[];for(const k of chosen){if(SCH[k]&&SCH[k][d])r.push({sport:k,...SCH[k][d]})}return r};
+      const medal=d=>{for(const k of Object.keys(SCH)){if(SCH[k][d]&&SCH[k][d].d.includes("\u2605"))return true}return false};
+      const sEvts=sel?evts(sel):[];
+      const filt=useMemo(()=>Object.keys(SP).filter(k=>SP[k].l.toLowerCase().includes(q.toLowerCase())),[q]);
+
+      if(!loaded)return<div style={{minHeight:"100vh",background:"#0a0e27",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Outfit'",color:"rgba(255,255,255,0.4)"}}>Loading...</div>;
+
+      return(
+        <div style={{minHeight:"100vh",background:"linear-gradient(145deg,#0a0e27 0%,#121a3a 40%,#1a1040 100%)",fontFamily:"'Segoe UI','Helvetica Neue',sans-serif",color:"#e8e6f0",padding:"env(safe-area-inset-top,16px) 20px 32px",maxWidth:720,margin:"0 auto"}}>
+          <style>{`
+            @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap');
+            *{box-sizing:border-box}
+            .cg{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+            .dh{font-family:'Space Mono',monospace;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,0.35);text-align:center;padding:8px 0}
+            .dc{aspect-ratio:1;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:6px 2px 4px;cursor:pointer;position:relative;transition:all .2s;border:1.5px solid transparent;background:rgba(255,255,255,0.03);-webkit-user-select:none}
+            .dc:hover{background:rgba(255,255,255,0.08);transform:scale(1.04);z-index:2}
+            .dc.s{border-color:rgba(255,255,255,0.4);background:rgba(255,255,255,0.1);box-shadow:0 0 20px rgba(255,255,255,0.08)}
+            .dc.c{background:linear-gradient(135deg,rgba(255,215,0,0.12),rgba(255,140,0,0.08));border-color:rgba(255,215,0,0.3)}
+            .dn{font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;color:rgba(255,255,255,0.85);margin-bottom:3px}
+            .dc.e{background:transparent;cursor:default}.dc.e:hover{transform:none;background:transparent}
+            .dc.ne{opacity:.4}
+            .sd{display:flex;flex-wrap:wrap;gap:2px;justify-content:center;align-items:center;max-width:100%}
+            .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+            .nd{width:6px;height:6px;border-radius:2px;flex-shrink:0;background:${NC};box-shadow:0 0 4px ${NC}80}
+            .ms{position:absolute;top:2px;right:3px;font-size:9px}
+            .dp{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:20px;margin-top:16px;backdrop-filter:blur(10px)}
+            .ec{display:flex;align-items:flex-start;gap:12px;padding:12px;border-radius:10px;margin-bottom:8px;border-left:3px solid}
+            .cb{font-family:'Outfit',sans-serif;font-size:8px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#FFD700;position:absolute;bottom:2px;left:50%;transform:translateX(-50%);white-space:nowrap}
+            .nt{width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(0,201,167,0.3);border-radius:8px;color:#e8e6f0;font-family:'Outfit',sans-serif;font-size:13px;padding:10px 12px;resize:vertical;min-height:60px;outline:none}
+            .nt:focus{border-color:${NC}}.nt::placeholder{color:rgba(255,255,255,0.2)}
+            .nb{font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;padding:8px 16px;border-radius:8px;border:none;cursor:pointer}
+            .nb:active{transform:scale(.97)}
+            .ns{background:${NC};color:#0a0e27}.ncn{background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.1)}
+            .ndl{background:rgba(230,57,70,0.15);color:#E63946;border:1px solid rgba(230,57,70,0.25)}
+            .ned{background:rgba(0,201,167,0.12);color:${NC};border:1px solid rgba(0,201,167,0.25)}
+            .vl{display:flex;align-items:flex-start;gap:4px;margin-top:4px}.vp{font-size:10px;flex-shrink:0;margin-top:1px}
+            .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(0,201,167,0.9);color:#0a0e27;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;padding:10px 20px;border-radius:10px;z-index:1000;pointer-events:none;animation:fadeT 2s forwards}
+            @keyframes fadeT{0%{opacity:0;transform:translateX(-50%) translateY(10px)}10%{opacity:1;transform:translateX(-50%) translateY(0)}80%{opacity:1}100%{opacity:0}}
+            .ov{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:900;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px)}
+            .pk{background:linear-gradient(180deg,#151b38,#0e1228);border-radius:20px 20px 0 0;width:100%;max-width:720px;max-height:85vh;display:flex;flex-direction:column;padding:20px;animation:sU .3s ease}
+            @keyframes sU{from{transform:translateY(100%)}to{transform:translateY(0)}}
+            .pks{width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:10px;color:#e8e6f0;font-family:'Outfit',sans-serif;font-size:14px;padding:10px 14px;outline:none;margin-bottom:12px}
+            .pks:focus{border-color:rgba(255,255,255,0.3)}.pks::placeholder{color:rgba(255,255,255,0.25)}
+            .pkg{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;overflow-y:auto;flex:1;padding-bottom:8px;-webkit-overflow-scrolling:touch}
+            .sc{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;border:1.5px solid transparent;cursor:pointer;transition:all .15s;background:rgba(255,255,255,0.03);-webkit-user-select:none}
+            .sc:active{transform:scale(.97)}.sc.on{background:rgba(255,255,255,0.08)}
+            @media(max-width:480px){.dc{padding:4px 1px 3px;border-radius:8px}.dn{font-size:12px;margin-bottom:2px}.dot,.nd{width:5px;height:5px}.sd{gap:1px}.pkg{grid-template-columns:1fr 1fr}}
+          `}</style>
+
+          {toast&&<div className="toast">{toast}</div>}
+
+          <div style={{textAlign:"center",marginBottom:20,paddingTop:12}}>
+            <div style={{fontFamily:"'Space Mono',monospace",fontSize:11,fontWeight:700,letterSpacing:6,textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:6}}>Los Angeles 2028</div>
+            <h1 style={{fontFamily:"'Outfit',sans-serif",fontSize:28,fontWeight:800,margin:0,background:"linear-gradient(135deg,#FFD700 0%,#FF8C00 50%,#E63946 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>Olympic Games Schedule</h1>
+            <p style={{fontFamily:"'Outfit',sans-serif",fontSize:13,color:"rgba(255,255,255,0.35)",margin:"4px 0 0",fontWeight:300}}>July 2028</p>
+          </div>
+
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16,flexWrap:"wrap"}}>
+            <button onClick={()=>setPicker(true)} style={{fontFamily:"'Outfit',sans-serif",fontSize:12,fontWeight:600,padding:"8px 14px",borderRadius:10,border:"1.5px solid rgba(255,255,255,0.15)",background:"rgba(255,255,255,0.06)",color:"#fff",cursor:"pointer",whiteSpace:"nowrap"}}>{"\u2699\uFE0F"} Sports ({chosen.length})</button>
+            <div style={{display:"flex",gap:4,flexWrap:"wrap",flex:1}}>
+              {chosen.slice(0,12).map(k=>SP[k]&&<div key={k} style={{display:"flex",alignItems:"center",gap:3,padding:"3px 7px",borderRadius:6,background:`${SP[k].c}18`,border:`1px solid ${SP[k].c}40`}}><span style={{fontSize:11}}>{SP[k].i}</span><div style={{width:5,height:5,borderRadius:"50%",background:SP[k].c}}/></div>)}
+              {chosen.length>12&&<span style={{fontFamily:"'Outfit'",fontSize:11,color:"rgba(255,255,255,0.35)",padding:"3px 6px"}}>+{chosen.length-12}</span>}
+            </div>
+          </div>
+
+          <div className="cg">
+            {DOW.map(d=><div key={d} className="dh">{d}</div>)}
+            {cells.map((day,idx)=>{
+              if(day===null)return<div key={`e${idx}`}className="dc e"/>;
+              const ev=evts(day),isCer=!!CER[day],hasEv=ev.length>0,isMed=medal(day),hasN=!!notes[day];
+              return(<div key={day}className={`dc${sel===day?" s":""}${isCer?" c":""}${!hasEv&&!isCer&&!hasN?" ne":""}`}onClick={()=>setSel(sel===day?null:day)}>
+                <span className="dn">{day}</span>
+                {isMed&&<span className="ms">{"\u{1F3C5}"}</span>}
+                <div className="sd">
+                  {ev.slice(0,6).map((e,j)=><div key={j}className="dot"style={{backgroundColor:SP[e.sport].c,boxShadow:`0 0 4px ${SP[e.sport].c}80`}}/>)}
+                  {ev.length>6&&<span style={{fontSize:7,color:"rgba(255,255,255,0.4)",fontFamily:"'Outfit'"}}> +{ev.length-6}</span>}
+                  {hasN&&<div className="nd"/>}
+                </div>
+                {isCer&&<span className="cb">{day===14?"OPEN":"CLOSE"}</span>}
+              </div>);
+            })}
+          </div>
+
+          {sel&&(<div className="dp">
+            <div style={{display:"flex",alignItems:"baseline",gap:10,marginBottom:14}}>
+              <span style={{fontFamily:"'Outfit'",fontSize:24,fontWeight:700,color:"#fff"}}>July {sel}</span>
+              <span style={{fontFamily:"'Space Mono'",fontSize:11,color:"rgba(255,255,255,0.35)",letterSpacing:1,textTransform:"uppercase"}}>{DOW[(off+sel-1)%7]} &middot; Day {sel-14}</span>
+            </div>
+            {CER[sel]&&<div style={{background:"linear-gradient(135deg,rgba(255,215,0,0.15),rgba(255,140,0,0.08))",border:"1px solid rgba(255,215,0,0.25)",borderRadius:10,padding:"12px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:10}}>
+              <span style={{fontSize:20}}>{"\u{1F3DF}\uFE0F"}</span><div><div style={{fontFamily:"'Outfit'",fontWeight:600,fontSize:14,color:"#FFD700"}}>{CER[sel]}</div><div className="vl"><span className="vp">{"\u{1F4CD}"}</span><span style={{fontFamily:"'Space Mono'",fontSize:10,color:"rgba(255,255,255,0.35)"}}>LA Memorial Coliseum & 2028 Stadium, Inglewood</span></div></div>
+            </div>}
+            {sEvts.length>0?sEvts.map((e,i)=>(<div key={i}className="ec"style={{backgroundColor:`${SP[e.sport].c}18`,borderLeftColor:SP[e.sport].c}}>
+              <span style={{fontSize:20,marginTop:2}}>{SP[e.sport].i}</span>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontFamily:"'Outfit'",fontWeight:600,fontSize:13,color:SP[e.sport].c}}>{SP[e.sport].l}</div>
+                <div style={{fontFamily:"'Outfit'",fontSize:12,color:"rgba(255,255,255,0.55)",marginTop:2}}>{e.d}</div>
+                <div className="vl"><span className="vp">{"\u{1F4CD}"}</span><span style={{fontFamily:"'Space Mono'",fontSize:9,color:"rgba(255,255,255,0.3)",lineHeight:1.4}}>{e.v||SP[e.sport].v}</span></div>
+              </div>
+            </div>)):!CER[sel]&&!notes[sel]&&<p style={{fontFamily:"'Outfit'",fontSize:13,color:"rgba(255,255,255,0.3)",textAlign:"center",margin:"8px 0"}}>No selected sports on this day.</p>}
+
+            <div style={{marginTop:14,borderTop:"1px solid rgba(255,255,255,0.08)",paddingTop:14}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+                <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:13}}>{"\u{1F4DD}"}</span><span style={{fontFamily:"'Outfit'",fontSize:13,fontWeight:600,color:NC}}>My Notes</span></div>
+                {notes[sel]&&!ed&&<div style={{display:"flex",gap:6}}><button className="nb ned"onClick={()=>setEd(true)}>Edit</button><button className="nb ndl"onClick={delNote}>Delete</button></div>}
+              </div>
+              {notes[sel]&&!ed?<div style={{background:NBG,border:`1px solid ${NBR}`,borderRadius:8,padding:"10px 14px",fontFamily:"'Outfit'",fontSize:13,color:"rgba(255,255,255,0.7)",lineHeight:1.6,whiteSpace:"pre-wrap"}}>{notes[sel]}</div>
+              :<div><textarea className="nt"placeholder="Add a note for this day..."value={ni}onChange={e=>{setNi(e.target.value);if(!ed)setEd(true)}}rows={3}/>
+                {ed&&<div style={{display:"flex",gap:8,marginTop:8,justifyContent:"flex-end"}}><button className="nb ncn"onClick={()=>{setNi(notes[sel]||"");setEd(false)}}>Cancel</button><button className="nb ns"onClick={saveNote}style={{opacity:ni.trim()?1:.4}}>Save</button></div>}
+              </div>}
+            </div>
+          </div>)}
+
+          <div style={{textAlign:"center",marginTop:20,fontFamily:"'Space Mono'",fontSize:10,color:"rgba(255,255,255,0.2)",lineHeight:1.6}}> Schedule subject to change &middot; Source: LA28.org & NBC Sports<br/>{"\u{1F3C5}"} = Medal events &middot; Tap a day for details</div>
+
+          {picker&&<div className="ov"onClick={e=>{if(e.target===e.currentTarget)setPicker(false)}}>
+            <div className="pk">
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+                <h2 style={{fontFamily:"'Outfit'",fontSize:20,fontWeight:700,color:"#fff"}}>Select Sports</h2>
+                <button onClick={()=>setPicker(false)}style={{background:"rgba(255,255,255,0.1)",border:"none",borderRadius:8,padding:"8px 14px",color:"#fff",fontFamily:"'Outfit'",fontSize:13,fontWeight:600,cursor:"pointer"}}>Done ({chosen.length})</button>
+              </div>
+              <input className="pks"placeholder="Search sports..."value={q}onChange={e=>setQ(e.target.value)}/>
+              <div style={{display:"flex",gap:8,marginBottom:12}}>
+                <button onClick={()=>pChosen(Object.keys(SP))}style={{fontSize:11,fontFamily:"'Outfit'",fontWeight:500,padding:"6px 12px",borderRadius:6,border:"1px solid rgba(255,255,255,0.12)",background:"rgba(255,255,255,0.04)",color:"rgba(255,255,255,0.5)",cursor:"pointer"}}>Select All</button>
+                <button onClick={()=>pChosen([])}style={{fontSize:11,fontFamily:"'Outfit'",fontWeight:500,padding:"6px 12px",borderRadius:6,border:"1px solid rgba(255,255,255,0.12)",background:"rgba(255,255,255,0.04)",color:"rgba(255,255,255,0.5)",cursor:"pointer"}}>Clear All</button>
+                <button onClick={()=>pChosen([...DEF])}style={{fontSize:11,fontFamily:"'Outfit'",fontWeight:500,padding:"6px 12px",borderRadius:6,border:"1px solid rgba(255,255,255,0.12)",background:"rgba(255,255,255,0.04)",color:"rgba(255,255,255,0.5)",cursor:"pointer"}}>Defaults</button>
+              </div>
+              <div className="pkg">
+                {filt.map(k=>{const on=chosen.includes(k);return(<div key={k}className={`sc${on?" on":""}`}onClick={()=>toggle(k)}style={on?{borderColor:`${SP[k].c}60`}:{}}>
+                  <span style={{fontSize:18}}>{SP[k].i}</span>
+                  <div style={{flex:1,minWidth:0}}><div style={{fontFamily:"'Outfit'",fontSize:12,fontWeight:on?600:400,color:on?SP[k].c:"rgba(255,255,255,0.5)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{SP[k].l}</div></div>
+                  <div style={{width:18,height:18,borderRadius:4,border:`2px solid ${on?SP[k].c:"rgba(255,255,255,0.15)"}`,background:on?SP[k].c:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{on&&<span style={{color:"#fff",fontSize:11,fontWeight:700}}>{"\u2713"}</span>}</div>
+                </div>)})}
+              </div>
+            </div>
+          </div>}
+        </div>
+      );
+    }
+
+    if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
+    ReactDOM.render(<App/>,document.getElementById("root"));
+  </script>
+</body>
+</html>
