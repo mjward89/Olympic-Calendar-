@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0e27" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="LA28 Schedule" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="manifest" href="manifest.json" />
+  <title>LA 2028 Olympics Schedule</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    html,body,#root{width:100%;min-height:100vh;overscroll-behavior:none}
+    body{background:#0a0e27;-webkit-tap-highlight-color:transparent}
+    .cg{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+    .dh{font-family:'Space Mono',monospace;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,0.35);text-align:center;padding:10px 0}
+    .dc{aspect-ratio:1;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:10px 4px 6px;cursor:pointer;position:relative;transition:all .2s;border:1.5px solid transparent;background:rgba(255,255,255,0.03);-webkit-user-select:none;user-select:none}
+    .dc:hover{background:rgba(255,255,255,0.08);transform:scale(1.05);z-index:2}
+    .dc.s{border-color:rgba(255,255,255,0.4);background:rgba(255,255,255,0.1);box-shadow:0 0 24px rgba(255,255,255,0.08)}
+    .dc.c{background:linear-gradient(135deg,rgba(255,215,0,0.12),rgba(255,140,0,0.08));border-color:rgba(255,215,0,0.3)}
+    .dn{font-family:'Outfit',sans-serif;font-size:16px;font-weight:600;color:rgba(255,255,255,0.85);margin-bottom:6px}
+    .dc.e{background:transparent;cursor:default}.dc.e:hover{transform:none;background:transparent}
+    .dc.ne{opacity:.45}
+    .sd{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;align-items:center}
+    .dot{width:8px;height:8px;border-radius:50%}
+    .nd{width:8px;height:8px;border-radius:2px;flex-shrink:0;background:#00C9A7;box-shadow:0 0 6px rgba(0,201,167,0.5)}
+    .ms{position:absolute;top:4px;right:6px;font-size:11px}
+    .li{display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:12px;cursor:pointer;transition:all .2s;border:1.5px solid transparent;-webkit-user-select:none;user-select:none}
+    .li:hover{background:rgba(255,255,255,0.06)}
+    .li.a{border-color:rgba(255,255,255,0.2);background:rgba(255,255,255,0.08)}
+    .dp{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:24px;margin-top:20px;backdrop-filter:blur(10px)}
+    .ec{display:flex;align-items:flex-start;gap:14px;padding:14px 16px;border-radius:12px;margin-bottom:10px;border-left:4px solid}
+    .cb{font-family:'Outfit',sans-serif;font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:#FFD700;position:absolute;bottom:4px;left:50%;transform:translateX(-50%);white-space:nowrap}
+    .nt{width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(0,201,167,0.3);border-radius:8px;color:#e8e6f0;font-family:'Outfit',sans-serif;font-size:14px;padding:12px 14px;resize:vertical;min-height:70px;outline:none;transition:border-color .2s}
+    .nt:focus{border-color:#00C9A7}.nt::placeholder{color:rgba(255,255,255,0.2)}
+    .nb{font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;padding:10px 18px;border-radius:8px;border:none;cursor:pointer;transition:all .15s;-webkit-user-select:none;user-select:none}
+    .nb:active{transform:scale(0.97)}
+    .ns{background:#00C9A7;color:#0a0e27}
+    .ncn{background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.1)}
+    .ndl{background:rgba(230,57,70,0.15);color:#E63946;border:1px solid rgba(230,57,70,0.25)}
+    .ned{background:rgba(0,201,167,0.12);color:#00C9A7;border:1px solid rgba(0,201,167,0.25)}
+    .vl{display:flex;align-items:flex-start;gap:4px;margin-top:4px}
+    .vp{font-size:10px;flex-shrink:0;margin-top:1px}
+    .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(0,201,167,0.9);color:#0a0e27;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;padding:10px 20px;border-radius:10px;z-index:999;pointer-events:none;animation:fadeToast 2s forwards}
+    @keyframes fadeToast{0%{opacity:0;transform:translateX(-50%) translateY(10px)}10%{opacity:1;transform:translateX(-50%) translateY(0)}80%{opacity:1}100%{opacity:0}}
+    @media(max-width:600px){
+      .cg{gap:4px}.dc{padding:6px 2px 4px;border-radius:8px}.dn{font-size:13px;margin-bottom:3px}
+      .dot,.nd{width:6px;height:6px}.sd{gap:3px}.ms{font-size:9px;top:2px;right:3px}.cb{font-size:7px}
+      .li{padding:8px 10px;gap:6px}
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect, useCallback } = React;
+
+    // Dual storage: try IndexedDB first, fallback to localStorage
+    const DB_NAME = 'la28db';
+    const STORE = 'notes';
+    const openDB = () => new Promise((resolve, reject) => {
+      const req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = () => req.result.createObjectStore(STORE);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+    const idbGet = async (key) => {
+      try {
+        const db = await openDB();
+        return new Promise((resolve) => {
+          const tx = db.transaction(STORE, 'readonly');
+          const r = tx.objectStore(STORE).get(key);
+          r.onsuccess = () => resolve(r.result ?? null);
+          r.onerror = () => resolve(null);
+        });
+      } catch(e) {
+        try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : null; } catch(e2) { return null; }
+      }
+    };
+    const idbSet = async (key, val) => {
+      try {
+        const db = await openDB();
+        const tx = db.transaction(STORE, 'readwrite');
+        tx.objectStore(STORE).put(val, key);
+      } catch(e) {}
+      try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {}
+    };
+
+    const SPORTS = {
+      softball:      { label:"Softball",           color:"#E63946", bgColor:"rgba(230,57,70,0.15)",   borderColor:"rgba(230,57,70,0.5)",   icon:"\u{1F94E}" },
+      football:      { label:"Football (Soccer)",   color:"#2D6A4F", bgColor:"rgba(45,106,79,0.15)",   borderColor:"rgba(45,106,79,0.5)",   icon:"\u26BD"    },
+      swimming:      { label:"Swimming",            color:"#0077B6", bgColor:"rgba(0,119,182,0.15)",   borderColor:"rgba(0,119,182,0.5)",   icon:"\u{1F3CA}" },
+      gymnastics:    { label:"Gymnastics",          color:"#9B5DE5", bgColor:"rgba(155,93,229,0.15)",  borderColor:"rgba(155,93,229,0.5)",  icon:"\u{1F938}" },
+      skateboarding: { label:"Skateboarding",       color:"#F77F00", bgColor:"rgba(247,127,0,0.15)",   borderColor:"rgba(247,127,0,0.5)",   icon:"\u{1F6F9}" },
+    };
+
+    const NC="#00C9A7", NBG="rgba(0,201,167,0.15)", NBR="rgba(0,201,167,0.5)";
+
+    const SCHEDULE = {
+      10:[{sport:"football",detail:"Men's Group Play Begins",venue:"New York, Nashville, Columbus, St. Louis, San Jose, San Diego"}],
+      11:[{sport:"football",detail:"Women's Group Play Begins",venue:"New York, Nashville, Columbus, St. Louis, San Jose, San Diego"}],
+      12:[{sport:"football",detail:"Group Play",venue:"New York, Nashville, Columbus, St. Louis, San Jose, San Diego"}],
+      13:[{sport:"football",detail:"Group Play",venue:"New York, Nashville, Columbus, St. Louis, San Jose, San Diego"}],
+      14:[],
+      15:[
+        {sport:"football",detail:"Group Play",venue:"New York, Nashville, Columbus, St. Louis, San Jose, San Diego"},
+        {sport:"gymnastics",detail:"Qualifications Begin",venue:"DTLA Arena, Los Angeles"},
+        {sport:"skateboarding",detail:"Street Prelims",venue:"Valley Complex 1, Sepulveda Basin, San Fernando Valley"},
+      ],
+      16:[
+        {sport:"football",detail:"Group Play",venue:"New York, Nashville, Columbus, St. Louis, San Jose, San Diego"},
+        {sport:"gymnastics",detail:"Qualifications",venue:"DTLA Arena, Los Angeles"},
+        {sport:"skateboarding",detail:"Street Prelims",venue:"Valley Complex 1, Sepulveda Basin, San Fernando Valley"},
+      ],
+      17:[
+        {sport:"football",detail:"Group Play",venue:"New York, Nashville, Columbus, St. Louis, San Jose, San Diego"},
+        {sport:"gymnastics",detail:"Men's Team Final",venue:"DTLA Arena, Los Angeles"},
+        {sport:"skateboarding",detail:"Street Finals",venue:"Valley Complex 1, Sepulveda Basin, San Fernando Valley"},
+      ],
+      18:[
+        {sport:"football",detail:"Group Play",venue:"New York, Nashville, Columbus, St. Louis, San Jose, San Diego"},
+        {sport:"gymnastics",detail:"Women's Team Final",venue:"DTLA Arena, Los Angeles"},
+        {sport:"skateboarding",detail:"Street Finals",venue:"Valley Complex 1, Sepulveda Basin, San Fernando Valley"},
+      ],
+      19:[
+        {sport:"football",detail:"Group Play",venue:"Advancing toward West Coast venues"},
+        {sport:"gymnastics",detail:"Men's All-Around Final",venue:"DTLA Arena, Los Angeles"},
+        {sport:"skateboarding",detail:"Park Prelims",venue:"Valley Complex 2, Sepulveda Basin, San Fernando Valley"},
+      ],
+      20:[
+        {sport:"football",detail:"Group Play",venue:"Advancing toward West Coast venues"},
+        {sport:"gymnastics",detail:"Women's All-Around Final",venue:"DTLA Arena, Los Angeles"},
+        {sport:"skateboarding",detail:"Park Prelims",venue:"Valley Complex 2, Sepulveda Basin, San Fernando Valley"},
+      ],
+      21:[
+        {sport:"football",detail:"Quarterfinals",venue:"Venues moving westward toward LA region"},
+        {sport:"skateboarding",detail:"Park Finals",venue:"Valley Complex 2, Sepulveda Basin, San Fernando Valley"},
+      ],
+      22:[
+        {sport:"football",detail:"Quarterfinals",venue:"Venues moving westward toward LA region"},
+        {sport:"gymnastics",detail:"Apparatus Finals",venue:"DTLA Arena, Los Angeles"},
+        {sport:"swimming",detail:"Heats Begin",venue:"2028 Stadium (SoFi Stadium), Inglewood"},
+        {sport:"skateboarding",detail:"Park Finals",venue:"Valley Complex 2, Sepulveda Basin, San Fernando Valley"},
+      ],
+      23:[
+        {sport:"football",detail:"Quarterfinals",venue:"Venues moving westward toward LA region"},
+        {sport:"gymnastics",detail:"Apparatus Finals",venue:"DTLA Arena, Los Angeles"},
+        {sport:"swimming",detail:"Heats & Finals",venue:"2028 Stadium (SoFi Stadium), Inglewood"},
+        {sport:"softball",detail:"Group Stage Begins",venue:"Devon Park (OKC Softball Park), Oklahoma City, OK"},
+      ],
+      24:[
+        {sport:"football",detail:"Semifinals",venue:"Rose Bowl Stadium, Pasadena"},
+        {sport:"gymnastics",detail:"Apparatus Finals",venue:"DTLA Arena, Los Angeles"},
+        {sport:"swimming",detail:"Heats & Finals",venue:"2028 Stadium (SoFi Stadium), Inglewood"},
+        {sport:"softball",detail:"Group Stage",venue:"Devon Park (OKC Softball Park), Oklahoma City, OK"},
+      ],
+      25:[
+        {sport:"football",detail:"Semifinals",venue:"Rose Bowl Stadium, Pasadena"},
+        {sport:"gymnastics",detail:"Mixed Team Final",venue:"DTLA Arena, Los Angeles"},
+        {sport:"swimming",detail:"Heats & Finals",venue:"2028 Stadium (SoFi Stadium), Inglewood"},
+        {sport:"softball",detail:"Group Stage",venue:"Devon Park (OKC Softball Park), Oklahoma City, OK"},
+      ],
+      26:[
+        {sport:"football",detail:"Bronze Medal Match",venue:"Rose Bowl Stadium, Pasadena"},
+        {sport:"swimming",detail:"Heats & Finals",venue:"2028 Stadium (SoFi Stadium), Inglewood"},
+        {sport:"softball",detail:"Group Stage",venue:"Devon Park (OKC Softball Park), Oklahoma City, OK"},
+      ],
+      27:[
+        {sport:"swimming",detail:"Heats & Finals",venue:"2028 Stadium (SoFi Stadium), Inglewood"},
+        {sport:"softball",detail:"Group Stage Ends",venue:"Devon Park (OKC Softball Park), Oklahoma City, OK"},
+      ],
+      28:[
+        {sport:"swimming",detail:"Heats & Finals",venue:"2028 Stadium (SoFi Stadium), Inglewood"},
+        {sport:"softball",detail:"Bronze Medal Game",venue:"Devon Park (OKC Softball Park), Oklahoma City, OK"},
+      ],
+      29:[
+        {sport:"football",detail:"Gold Medal Match \u2605",venue:"Rose Bowl Stadium, Pasadena"},
+        {sport:"swimming",detail:"Finals",venue:"2028 Stadium (SoFi Stadium), Inglewood"},
+        {sport:"softball",detail:"Gold Medal Game \u2605",venue:"Devon Park (OKC Softball Park), Oklahoma City, OK"},
+      ],
+      30:[{sport:"swimming",detail:"Final Events \u2605",venue:"2028 Stadium (SoFi Stadium), Inglewood"}],
+    };
+
+    const DOW=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+    const CER={14:"Opening Ceremony",30:"Closing Ceremony"};
+
+    function App() {
+      const [sel,setSel]=useState(null);
+      const [filter,setFilter]=useState(null);
+      const [notes,setNotes]=useState({});
+      const [noteInput,setNoteInput]=useState("");
+      const [editing,setEditing]=useState(false);
+      const [loaded,setLoaded]=useState(false);
+      const [toast,setToast]=useState(null);
+
+      useEffect(()=>{
+        idbGet("olympics-notes").then(data=>{
+          if(data&&typeof data==='object')setNotes(data);
+          setLoaded(true);
+        });
+      },[]);
+
+      const showToast=(msg)=>{setToast(msg);setTimeout(()=>setToast(null),2000)};
+
+      const persist=useCallback((u)=>{
+        setNotes(u);
+        idbSet("olympics-notes",u).then(()=>showToast("Note saved"));
+      },[]);
+
+      const saveNote=()=>{
+        if(!sel||!noteInput.trim())return;
+        persist({...notes,[sel]:noteInput.trim()});
+        setEditing(false);
+      };
+      const deleteNote=()=>{
+        if(!sel)return;
+        const u={...notes};delete u[sel];
+        setNotes(u);
+        idbSet("olympics-notes",u);
+        setNoteInput("");setEditing(false);
+        showToast("Note deleted");
+      };
+
+      useEffect(()=>{
+        if(sel&&notes[sel])setNoteInput(notes[sel]);
+        else setNoteInput("");
+        setEditing(false);
+      },[sel]);
+
+      const off=6,days=31;
+      const cells=[];
+      for(let i=0;i<off;i++)cells.push(null);
+      for(let d=1;d<=days;d++)cells.push(d);
+
+      const evts=(d)=>{if(!SCHEDULE[d])return[];return filter?SCHEDULE[d].filter(e=>e.sport===filter):SCHEDULE[d]};
+      const medal=(d)=>SCHEDULE[d]?.some(e=>e.detail.includes("\u2605"));
+      const selEvts=sel?evts(sel):[];
+
+      if(!loaded) return (
+        <div style={{minHeight:"100vh",background:"#0a0e27",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Outfit',sans-serif",color:"rgba(255,255,255,0.4)",fontSize:14}}>Loading...</div>
+      );
+
+      return (
+        <div style={{minHeight:"100vh",background:"linear-gradient(145deg,#0a0e27 0%,#121a3a 40%,#1a1040 100%)",fontFamily:"'Segoe UI','Helvetica Neue',sans-serif",color:"#e8e6f0",padding:"env(safe-area-inset-top, 16px) 24px 32px",maxWidth:720,margin:"0 auto"}}>
+
+          {toast&&<div className="toast">{toast}</div>}
+
+          {/* Header */}
+          <div style={{textAlign:"center",marginBottom:32,paddingTop:16}}>
+            <div style={{fontFamily:"'Space Mono',monospace",fontSize:12,fontWeight:700,letterSpacing:8,textTransform:"uppercase",color:"rgba(255,255,255,0.3)",marginBottom:10}}>Los Angeles 2028</div>
+            <h1 style={{fontFamily:"'Outfit',sans-serif",fontSize:36,fontWeight:800,margin:0,background:"linear-gradient(135deg,#FFD700 0%,#FF8C00 50%,#E63946 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:-0.5}}>Olympic Games Schedule</h1>
+            <p style={{fontFamily:"'Outfit',sans-serif",fontSize:14,color:"rgba(255,255,255,0.35)",margin:"8px 0 0",fontWeight:300}}>July 2028 &middot; Selected Sports</p>
+          </div>
+
+          {/* Legend */}
+          <div style={{display:"flex",flexWrap:"wrap",gap:6,justifyContent:"center",marginBottom:28}}>
+            {Object.entries(SPORTS).map(([k,sp])=>(
+              <div key={k} className={`li ${filter===k?"a":""}`} onClick={()=>setFilter(filter===k?null:k)} style={filter===k?{borderColor:sp.borderColor}:{}}>
+                <span style={{fontSize:18}}>{sp.icon}</span>
+                <div style={{width:10,height:10,borderRadius:"50%",backgroundColor:sp.color,boxShadow:`0 0 8px ${sp.color}60`,flexShrink:0}}/>
+                <span style={{fontFamily:"'Outfit',sans-serif",fontSize:13,fontWeight:500,color:filter===k?sp.color:"rgba(255,255,255,0.6)"}}>{sp.label}</span>
+              </div>
+            ))}
+            <div className="li" style={{opacity:.7,cursor:"default"}}>
+              <span style={{fontSize:15}}>{"\u{1F4DD}"}</span>
+              <div style={{width:10,height:10,borderRadius:2,backgroundColor:NC,boxShadow:`0 0 8px ${NC}60`,flexShrink:0}}/>
+              <span style={{fontFamily:"'Outfit',sans-serif",fontSize:13,fontWeight:500,color:"rgba(255,255,255,0.5)"}}>My Notes</span>
+            </div>
+            {filter&&<div className="li" onClick={()=>setFilter(null)} style={{color:"rgba(255,255,255,0.5)"}}><span style={{fontFamily:"'Outfit',sans-serif",fontSize:12,fontWeight:400}}>{"\u2715"} Clear</span></div>}
+          </div>
+
+          {/* Grid */}
+          <div className="cg">
+            {DOW.map(d=><div key={d} className="dh">{d}</div>)}
+            {cells.map((day,i)=>{
+              if(day===null)return <div key={`e${i}`} className="dc e"/>;
+              const ev=evts(day),isCer=!!CER[day],hasEv=ev.length>0,isMed=medal(day),hasN=!!notes[day];
+              return(
+                <div key={day} className={`dc${sel===day?" s":""}${isCer?" c":""}${!hasEv&&!isCer&&!hasN?" ne":""}`} onClick={()=>setSel(sel===day?null:day)}>
+                  <span className="dn">{day}</span>
+                  {isMed&&<span className="ms">{"\u{1F3C5}"}</span>}
+                  <div className="sd">
+                    {ev.map((e,j)=><div key={j} className="dot" style={{backgroundColor:SPORTS[e.sport].color,boxShadow:`0 0 6px ${SPORTS[e.sport].color}80`}}/>)}
+                    {hasN&&<div className="nd"/>}
+                  </div>
+                  {isCer&&<span className="cb">{day===14?"OPEN":"CLOSE"}</span>}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Detail */}
+          {sel&&(
+            <div className="dp">
+              <div style={{display:"flex",alignItems:"baseline",gap:12,marginBottom:16}}>
+                <span style={{fontFamily:"'Outfit',sans-serif",fontSize:28,fontWeight:700,color:"#fff"}}>July {sel}</span>
+                <span style={{fontFamily:"'Space Mono',monospace",fontSize:12,color:"rgba(255,255,255,0.35)",letterSpacing:1,textTransform:"uppercase"}}>
+                  {DOW[(off+sel-1)%7]}{` \u00B7 Day ${sel-14}`}
+                </span>
+              </div>
+
+              {CER[sel]&&(
+                <div style={{background:"linear-gradient(135deg,rgba(255,215,0,0.15),rgba(255,140,0,0.08))",border:"1px solid rgba(255,215,0,0.25)",borderRadius:12,padding:"14px 16px",marginBottom:14,display:"flex",alignItems:"center",gap:12}}>
+                  <span style={{fontSize:24}}>{"\u{1F3DF}\uFE0F"}</span>
+                  <div>
+                    <div style={{fontFamily:"'Outfit',sans-serif",fontWeight:600,fontSize:15,color:"#FFD700"}}>{CER[sel]}</div>
+                    <div className="vl"><span className="vp">{"\u{1F4CD}"}</span><span style={{fontFamily:"'Space Mono',monospace",fontSize:10,color:"rgba(255,255,255,0.35)",lineHeight:1.4}}>LA Memorial Coliseum & 2028 Stadium (SoFi), Inglewood</span></div>
+                  </div>
+                </div>
+              )}
+
+              {selEvts.length>0?selEvts.map((e,i)=>(
+                <div key={i} className="ec" style={{backgroundColor:SPORTS[e.sport].bgColor,borderLeftColor:SPORTS[e.sport].color}}>
+                  <span style={{fontSize:26,marginTop:2}}>{SPORTS[e.sport].icon}</span>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontFamily:"'Outfit',sans-serif",fontWeight:600,fontSize:15,color:SPORTS[e.sport].color}}>{SPORTS[e.sport].label}</div>
+                    <div style={{fontFamily:"'Outfit',sans-serif",fontSize:13,color:"rgba(255,255,255,0.55)",marginTop:2}}>{e.detail}</div>
+                    <div className="vl"><span className="vp">{"\u{1F4CD}"}</span><span style={{fontFamily:"'Space Mono',monospace",fontSize:10,color:"rgba(255,255,255,0.3)",lineHeight:1.4}}>{e.venue}</span></div>
+                  </div>
+                </div>
+              )):!CER[sel]&&!notes[sel]&&<p style={{fontFamily:"'Outfit',sans-serif",fontSize:14,color:"rgba(255,255,255,0.3)",textAlign:"center",margin:"12px 0 0"}}>No events for the selected sports on this day.</p>}
+
+              {/* Notes */}
+              <div style={{marginTop:18,borderTop:"1px solid rgba(255,255,255,0.08)",paddingTop:18}}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <span style={{fontSize:15}}>{"\u{1F4DD}"}</span>
+                    <span style={{fontFamily:"'Outfit',sans-serif",fontSize:14,fontWeight:600,color:NC}}>My Notes</span>
+                  </div>
+                  {notes[sel]&&!editing&&(
+                    <div style={{display:"flex",gap:6}}>
+                      <button className="nb ned" onClick={()=>setEditing(true)}>Edit</button>
+                      <button className="nb ndl" onClick={deleteNote}>Delete</button>
+                    </div>
+                  )}
+                </div>
+                {notes[sel]&&!editing?(
+                  <div style={{background:NBG,border:`1px solid ${NBR}`,borderRadius:8,padding:"12px 16px",fontFamily:"'Outfit',sans-serif",fontSize:14,color:"rgba(255,255,255,0.7)",lineHeight:1.6,whiteSpace:"pre-wrap"}}>{notes[sel]}</div>
+                ):(
+                  <div>
+                    <textarea className="nt" placeholder="Add a note for this day..." value={noteInput} onChange={e=>{setNoteInput(e.target.value);if(!editing)setEditing(true)}} rows={3}/>
+                    {editing&&(
+                      <div style={{display:"flex",gap:8,marginTop:10,justifyContent:"flex-end"}}>
+                        <button className="nb ncn" onClick={()=>{setNoteInput(notes[sel]||"");setEditing(false)}}>Cancel</button>
+                        <button className="nb ns" onClick={saveNote} style={{opacity:noteInput.trim()?1:0.4}}>Save Note</button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div style={{textAlign:"center",marginTop:32,fontFamily:"'Space Mono',monospace",fontSize:11,color:"rgba(255,255,255,0.2)",lineHeight:1.8,letterSpacing:0.5}}>
+            Schedule subject to change &middot; Source: LA28.org & NBC Sports<br/>{"\u{1F3C5}"} = Medal events &middot; Tap a day for details &middot; Tap a sport to filter
+          </div>
+        </div>
+      );
+    }
+
+    // Register Service Worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+    }
+
+    ReactDOM.render(<App/>, document.getElementById("root"));
+  </script>
+</body>
+</html>
